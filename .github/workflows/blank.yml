@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: Example CI Django & Postgres Tests
+name: Example CI Django
 
 # Controls when the workflow will run
 on:
@@ -17,9 +17,9 @@ jobs:
       postgres_main:
         image: postgres:12
         env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: djtesting
+          POSTGRES_USER: lms_admin
+          POSTGRES_PASSWORD: lms
+          POSTGRES_DB: lms_new
         ports:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
@@ -28,10 +28,10 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Setup Python 3.6
+      - name: Setup Python 3.8
         uses: actions/setup-python@v2
         with:
-          python-version: 3.6
+          python-version: 3.8
       - name: Install requirements
         run: |
           pip install -r requirements.txt
@@ -39,24 +39,27 @@ jobs:
         env:
           DEBUG: "0"
           DJANGO_SECRET_KEY: CI_CD_TEST_KEY
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: djtesting
+          POSTGRES_USER: lms_admin
+          POSTGRES_PASSWORD: lms
+          POSTGRES_DB: lms_new
           POSTGRES_PORT: 5432
-        run: |
-          python manage.py test
-      # - name: Push Main Branch into Production
-      #   uses: codingforentrepreneurs/action-branch-to-branch@main
-      #   with:
-      #     dest_branch: production-3
-      #     source_branch: main
-      #     commit_message: "Release production version"
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-      # - name: Install doctl
-      #   uses: digitalocean/action-doctl@v2
-      #   with:
-      #     token: ${{ secrets.DO_ACCESS_TOKEN }}
-      # - name: Run a DOCTL Command
-      #   run: |
-      #     doctl apps update ${{ secrets.DO_APP_ID }} --spec .do/app.yaml
+        run: |              
+              cd /home/legal/lms-backend
+              
+              git pull origin legalprosystem-staging
+              
+              cd /home/legal/
+              
+              source lmsenv/bin/activate
+              
+              cd lms-backend
+              
+              pip3 install -r requirements.txt
+              
+              deactivate
+              
+              python3 manage.py run_migration
+              
+              systemctl daemon-reload
+              
+              systemctl restart daphne.service
